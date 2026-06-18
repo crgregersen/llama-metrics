@@ -14,6 +14,11 @@ def main() -> None:
     parser.add_argument("--host", default=settings.observer_host)
     parser.add_argument("--port", default=settings.observer_port, type=int)
     parser.add_argument("--reload", action="store_true")
+    parser.add_argument(
+        "--access-log",
+        action="store_true",
+        help="Enable per-request access logs.",
+    )
     args = parser.parse_args()
     os.environ["OBSERVER_HOST"] = args.host
     os.environ["OBSERVER_PORT"] = str(args.port)
@@ -23,6 +28,7 @@ def main() -> None:
         host=args.host,
         port=args.port,
         reload=args.reload,
+        access_log=args.access_log,
     )
 
 

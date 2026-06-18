@@ -125,6 +125,14 @@ cd ~/src/llama-metrics
 .venv/bin/python -m app.run
 ```
 
+The runner keeps startup and error logs visible, but suppresses per-request
+access logs by default so the live dashboard does not flood the terminal. Enable
+request logs when debugging with:
+
+```bash
+.venv/bin/python -m app.run --access-log
+```
+
 Open:
 
 ```text
