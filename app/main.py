@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -17,10 +18,18 @@ STATIC_DIR = ROOT / "static"
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
-    app = FastAPI(title="LlamaMetrics", version=VERSION)
     resolved_settings = settings or Settings.from_env()
+    collector = TelemetryCollector(resolved_settings)
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        await collector.start()
+        yield
+        await collector.stop()
+
+    app = FastAPI(title="LlamaMetrics", version=VERSION, lifespan=lifespan)
     app.state.settings = resolved_settings
-    app.state.collector = TelemetryCollector(resolved_settings)
+    app.state.collector = collector
     app.state.version = VERSION
     app.include_router(router)
 
