@@ -35,10 +35,11 @@ Use Python 3.11 or newer:
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-cp .env.example .env
+mkdir -p ~/.llama-metrics
+cp .env.example ~/.llama-metrics/.env
 ```
 
-Edit `.env` for your `llama-server`:
+Edit `~/.llama-metrics/.env` for your `llama-server`:
 
 ```bash
 LLAMA_BASE_URL=http://127.0.0.1:8080
@@ -53,15 +54,39 @@ OBSERVER_PORT=7778
 `Authorization: Bearer <key>` when configured. It is never returned by the API or
 embedded in browser assets.
 
+Configuration is loaded from `~/.llama-metrics/.env` by default. A local `.env`
+inside the checkout is also supported for development and overrides values from
+the home-directory config. Real shell environment variables override both files.
+
+## Demo Mode
+
+`LLAMA_METRICS_DEMO` controls whether LlamaMetrics uses generated telemetry or
+real telemetry:
+
+```bash
+LLAMA_METRICS_DEMO=0
+```
+
+Normal mode. LlamaMetrics polls the configured `LLAMA_BASE_URL`, reads
+`/metrics` and `/slots`, and collects real GPU telemetry through NVML.
+
+```bash
+LLAMA_METRICS_DEMO=1
+```
+
+Demo mode. LlamaMetrics does not need a running `llama-server` or working NVIDIA
+GPU/NVML stack. It generates realistic mock multi-GPU, slot, chart, and event
+data so you can verify the dashboard after install or develop on a non-GPU
+machine.
+
+Use `LLAMA_METRICS_DEMO=0` for real monitoring.
+
 ## Run
 
 Start against a real `llama-server`:
 
 ```bash
-set -a
-. ./.env
-set +a
-.venv/bin/uvicorn app.main:app --host "$OBSERVER_HOST" --port "$OBSERVER_PORT"
+.venv/bin/python -m app.run
 ```
 
 Open:
@@ -73,7 +98,7 @@ http://localhost:7778
 Run without `llama-server` or GPU hardware:
 
 ```bash
-LLAMA_METRICS_DEMO=1 .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 7778
+LLAMA_METRICS_DEMO=1 .venv/bin/python -m app.run --host 127.0.0.1
 ```
 
 ## API
@@ -103,7 +128,9 @@ sudo useradd --system --home /opt/llama-metrics --shell /usr/sbin/nologin llama-
 sudo mkdir -p /opt/llama-metrics
 sudo cp -a . /opt/llama-metrics/
 sudo chown -R llama-metrics:llama-metrics /opt/llama-metrics
-sudo cp .env.example /etc/llama-metrics.env
+sudo mkdir -p /var/lib/llama-metrics
+sudo cp .env.example /var/lib/llama-metrics/.env
+sudo chown -R llama-metrics:llama-metrics /var/lib/llama-metrics
 sudo install -m 0644 systemd/llama-metrics.service /etc/systemd/system/llama-metrics.service
 sudo systemctl daemon-reload
 sudo systemctl enable --now llama-metrics

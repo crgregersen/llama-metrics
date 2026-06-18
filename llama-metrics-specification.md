@@ -120,6 +120,16 @@ http://localhost:7778
 
 Configuration must be environment-based.
 
+The default config file location is:
+
+```text
+~/.llama-metrics/.env
+```
+
+A local `.env` in the repository checkout is also supported for development and
+overrides values from the home-directory config. Real shell environment
+variables override both files.
+
 Example `.env` file:
 
 ```bash
@@ -147,6 +157,11 @@ Rules:
   `model` query parameter for `/metrics` polling.
 - `LLAMA_METRICS_DEMO=1` enables generated mock telemetry for development and
   UI verification without a reachable `llama-server` or NVML.
+- `LLAMA_METRICS_DEMO=0` is normal monitoring mode. In normal mode the observer
+  polls the configured `LLAMA_BASE_URL`, reads `/metrics` and `/slots`, and
+  collects real GPU telemetry through NVML.
+- Demo mode must be visibly synthetic in documentation and must not be presented
+  as real inference-server telemetry.
 - The key must never be returned by any API endpoint.
 - The key must never appear in HTML, JavaScript bundles or browser developer tools.
 - The dashboard should work with unauthenticated `llama-server` instances too.

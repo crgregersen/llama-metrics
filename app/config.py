@@ -2,7 +2,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import os
+from pathlib import Path
 from typing import Any
+
+from dotenv import dotenv_values
+
+
+DEFAULT_CONFIG_DIR = Path.home() / ".llama-metrics"
+DEFAULT_CONFIG_FILE = DEFAULT_CONFIG_DIR / ".env"
+LOCAL_CONFIG_FILE = Path(".env")
 
 
 def _bool_from_env(value: str | None, default: bool = False) -> bool:
@@ -11,8 +19,8 @@ def _bool_from_env(value: str | None, default: bool = False) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
-def _float_from_env(name: str, default: float) -> float:
-    value = os.getenv(name)
+def _float_from_mapping(values: dict[str, str], name: str, default: float) -> float:
+    value = values.get(name)
     if value is None or value == "":
         return default
     try:
@@ -21,8 +29,8 @@ def _float_from_env(name: str, default: float) -> float:
         return default
 
 
-def _int_from_env(name: str, default: int) -> int:
-    value = os.getenv(name)
+def _int_from_mapping(values: dict[str, str], name: str, default: int) -> int:
+    value = values.get(name)
     if value is None or value == "":
         return default
     try:
@@ -45,43 +53,57 @@ class Settings:
     gpu_vram_alert_percent: float = 90.0
     generation_throughput_drop_percent: float = 40.0
     generation_throughput_drop_window_seconds: int = 30
+    config_file: str | None = None
 
     @classmethod
     def from_env(cls) -> "Settings":
+        config_file, values = load_config_values()
         return cls(
-            llama_base_url=os.getenv("LLAMA_BASE_URL", cls.llama_base_url).rstrip("/"),
-            llama_api_key=os.getenv("LLAMA_API_KEY", ""),
-            llama_metrics_model=os.getenv("LLAMA_METRICS_MODEL", ""),
-            llama_metrics_demo=_bool_from_env(os.getenv("LLAMA_METRICS_DEMO"), False),
-            observer_host=os.getenv("OBSERVER_HOST", cls.observer_host),
-            observer_port=_int_from_env("OBSERVER_PORT", cls.observer_port),
+            llama_base_url=values.get("LLAMA_BASE_URL", cls.llama_base_url).rstrip("/"),
+            llama_api_key=values.get("LLAMA_API_KEY", ""),
+            llama_metrics_model=values.get("LLAMA_METRICS_MODEL", ""),
+            llama_metrics_demo=_bool_from_env(values.get("LLAMA_METRICS_DEMO"), False),
+            observer_host=values.get("OBSERVER_HOST", cls.observer_host),
+            observer_port=_int_from_mapping(values, "OBSERVER_PORT", cls.observer_port),
             poll_interval_seconds=max(
                 0.25,
-                _float_from_env("POLL_INTERVAL_SECONDS", cls.poll_interval_seconds),
+                _float_from_mapping(
+                    values,
+                    "POLL_INTERVAL_SECONDS",
+                    cls.poll_interval_seconds,
+                ),
             ),
             history_retention_minutes=max(
                 1,
-                _int_from_env(
+                _int_from_mapping(
+                    values,
                     "HISTORY_RETENTION_MINUTES", cls.history_retention_minutes
                 ),
             ),
-            gpu_temperature_alert_c=_float_from_env(
-                "GPU_TEMPERATURE_ALERT_C", cls.gpu_temperature_alert_c
+            gpu_temperature_alert_c=_float_from_mapping(
+                values,
+                "GPU_TEMPERATURE_ALERT_C",
+                cls.gpu_temperature_alert_c,
             ),
-            gpu_vram_alert_percent=_float_from_env(
-                "GPU_VRAM_ALERT_PERCENT", cls.gpu_vram_alert_percent
+            gpu_vram_alert_percent=_float_from_mapping(
+                values,
+                "GPU_VRAM_ALERT_PERCENT",
+                cls.gpu_vram_alert_percent,
             ),
-            generation_throughput_drop_percent=_float_from_env(
+            generation_throughput_drop_percent=_float_from_mapping(
+                values,
                 "GENERATION_THROUGHPUT_DROP_PERCENT",
                 cls.generation_throughput_drop_percent,
             ),
             generation_throughput_drop_window_seconds=max(
                 1,
-                _int_from_env(
+                _int_from_mapping(
+                    values,
                     "GENERATION_THROUGHPUT_DROP_WINDOW_SECONDS",
                     cls.generation_throughput_drop_window_seconds,
                 ),
             ),
+            config_file=str(config_file) if config_file else None,
         )
 
     @property
@@ -106,8 +128,22 @@ class Settings:
                 self.generation_throughput_drop_window_seconds
             ),
             "llama_api_key_configured": self.has_llama_api_key,
+            "config_file": self.config_file,
         }
 
 
 def get_settings() -> Settings:
     return Settings.from_env()
+
+
+def load_config_values() -> tuple[Path | None, dict[str, str]]:
+    values: dict[str, str] = {}
+    loaded: Path | None = None
+    for path in (DEFAULT_CONFIG_FILE, LOCAL_CONFIG_FILE):
+        if path.exists():
+            for key, value in dotenv_values(path).items():
+                if value is not None:
+                    values[key] = value
+            loaded = path
+    values.update(os.environ)
+    return loaded, values
