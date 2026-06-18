@@ -53,7 +53,7 @@ It must never start, stop, restart or reconfigure `llama-server`.
 
 - Linux host for GPU telemetry collection
 - NVIDIA GPU with NVML support
-- Python 3.11 or newer
+- Python 3.11, 3.12 or 3.13
 - Existing `llama.cpp` `llama-server`
 - `llama-server` `/metrics` endpoint enabled through `--metrics`
 - Protected `llama-server` endpoints using Bearer-token authentication

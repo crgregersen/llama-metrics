@@ -33,13 +33,16 @@ Run these commands on the machine that should host the LlamaMetrics dashboard.
 This can be the same machine as `llama-server`, or another machine that can
 reach it over the network.
 
+Use Python 3.11, 3.12, or 3.13. The current pinned dependencies do not support
+Python 3.14.
+
 ```bash
 mkdir -p ~/src
 cd ~/src
 git clone https://github.com/crgregersen/llama-metrics.git
 cd llama-metrics
 
-python3 -m venv .venv
+python3.12 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 
 mkdir -p ~/.llama-metrics
@@ -132,6 +135,23 @@ Run without `llama-server` or GPU hardware:
 
 ```bash
 LLAMA_METRICS_DEMO=1 .venv/bin/python -m app.run --host 127.0.0.1
+```
+
+## Troubleshooting
+
+If installation fails while building `pydantic-core` and the log mentions
+Python 3.14 or PyO3, recreate the venv with Python 3.11, 3.12, or 3.13:
+
+```bash
+rm -rf .venv
+python3.12 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+```
+
+Check the venv Python version with:
+
+```bash
+.venv/bin/python --version
 ```
 
 ## API
