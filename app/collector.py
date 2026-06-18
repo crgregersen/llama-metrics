@@ -1,26 +1,26 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 from datetime import datetime, timezone
 from typing import AsyncIterator
-from collections.abc import Callable
 
 from app.config import Settings
 from app.demo import demo_snapshot
+from app.events import EventEngine
 from app.host_metrics import HostMetricsResult, collect_host_metrics
 from app.llama_client import LlamaClient
 from app.metrics_parser import parse_prometheus_metrics
 from app.models import (
     HealthState,
     HistoryResponse,
-    HostTelemetry,
     InferenceMetrics,
     ServerStatus,
     Snapshot,
     SourceStatus,
-    TelemetryEvent,
 )
 from app.nvml_client import GpuCollection, NvmlClient
+from app.ring_buffer import RingBuffer
 from app.slots_parser import parse_slots_payload
 
 
@@ -41,7 +41,14 @@ class TelemetryCollector:
         self._nvml_client = nvml_client or NvmlClient()
         self._host_collector = host_collector
         self._snapshot = self._build_initial_snapshot()
-        self._events: list[TelemetryEvent] = []
+        self._history: RingBuffer[Snapshot] = RingBuffer(
+            retention_seconds=max(
+                self.settings.history_retention_minutes * 60,
+                2 * 60 * 60,
+            )
+        )
+        self._history.append(self._snapshot)
+        self._event_engine = EventEngine(settings)
         self._task: asyncio.Task | None = None
         self._lock = asyncio.Lock()
 
@@ -95,6 +102,8 @@ class TelemetryCollector:
             snapshot = await self._poll_real_sources()
 
         async with self._lock:
+            self._event_engine.update(snapshot)
+            self._history.append(snapshot)
             self._snapshot = snapshot
         return snapshot
 
@@ -102,10 +111,10 @@ class TelemetryCollector:
         return self._snapshot.status
 
     def history(self, window: str) -> HistoryResponse:
-        return HistoryResponse(window=window, snapshots=[self._snapshot])
+        return HistoryResponse(window=window, snapshots=self._history.window(window))
 
-    def events(self) -> list[TelemetryEvent]:
-        return list(self._events)
+    def events(self):
+        return self._event_engine.events()
 
     async def stream(self) -> AsyncIterator[Snapshot]:
         while True:
