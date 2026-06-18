@@ -1,0 +1,21 @@
+[Unit]
+Description=LlamaMetrics dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=llama-metrics
+Group=llama-metrics
+WorkingDirectory=/opt/llama-metrics
+EnvironmentFile=/etc/llama-metrics.env
+ExecStart=/opt/llama-metrics/.venv/bin/uvicorn app.main:app --host ${OBSERVER_HOST} --port ${OBSERVER_PORT}
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

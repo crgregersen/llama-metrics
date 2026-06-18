@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 from app.config import Settings
 from app.main import create_app
+from app.models import ServerStatus, Snapshot
 
 
 def make_client(settings: Settings | None = None) -> TestClient:
@@ -48,6 +49,34 @@ def test_events_returns_list() -> None:
 
     assert response.status_code == 200
     assert response.json() == {"events": []}
+
+
+def test_stream_emits_snapshot_event() -> None:
+    app = create_app(Settings())
+
+    class FiniteCollector:
+        async def stream(self):
+            yield Snapshot(server=ServerStatus(base_url="http://llama.test"))
+
+    app.state.collector = FiniteCollector()
+    client = TestClient(app)
+
+    response = client.get("/api/stream")
+
+    assert response.status_code == 200
+    assert "event: snapshot" in response.text
+    data_line = next(line for line in response.text.splitlines() if line.startswith("data: "))
+    assert data_line.startswith("data: ")
+    assert "llama_api_key" not in data_line
+
+
+def test_root_serves_dashboard() -> None:
+    client = make_client()
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert "LlamaMetrics" in response.text
+    assert "/static/app.js" in response.text
 
 
 def test_no_forbidden_public_endpoints() -> None:

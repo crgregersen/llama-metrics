@@ -11,6 +11,9 @@ Bearer-token protected `llama-server` endpoints and multiple GPUs are required
 MVP capabilities. The dashboard remains read-only and never exposes
 `LLAMA_API_KEY`.
 
+Implementation status: phases 0 through 6 have been completed in separate
+commits with tests passing after each implementation phase.
+
 ## Phase 0: Record Decisions
 
 - Update `llama-metrics-specification.md`:
