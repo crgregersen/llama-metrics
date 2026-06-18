@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LlamaMetrics</title>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>LlamaMetrics</h1>
+        <div class="subline" id="server-url">--</div>
+      </div>
+      <div class="status-strip">
+        <div class="status-pill" id="status-pill">unknown</div>
+        <div class="stat">
+          <span>Last poll</span>
+          <strong id="last-poll">--</strong>
+        </div>
+        <div class="stat">
+          <span>PID</span>
+          <strong id="server-pid">--</strong>
+        </div>
+        <div class="stat">
+          <span>Uptime</span>
+          <strong id="server-uptime">--</strong>
+        </div>
+        <div class="stat">
+          <span>GPUs</span>
+          <strong id="gpu-count">0</strong>
+        </div>
+        <div class="stat">
+          <span>Slots</span>
+          <strong id="slot-count">0</strong>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="overview-grid" aria-label="Inference overview">
+        <div class="metric-tile">
+          <span>Prompt tok/s</span>
+          <strong id="prompt-tps">--</strong>
+        </div>
+        <div class="metric-tile">
+          <span>Generation tok/s</span>
+          <strong id="generation-tps">--</strong>
+        </div>
+        <div class="metric-tile">
+          <span>Active</span>
+          <strong id="active-requests">--</strong>
+        </div>
+        <div class="metric-tile">
+          <span>Queued</span>
+          <strong id="queued-requests">--</strong>
+        </div>
+        <div class="metric-tile">
+          <span>Largest context</span>
+          <strong id="largest-context">--</strong>
+        </div>
+        <div class="metric-tile">
+          <span>Inferred phase</span>
+          <strong id="phase">--</strong>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>GPU Telemetry</h2>
+        </div>
+        <div class="gpu-grid" id="gpu-grid"></div>
+      </section>
+
+      <section class="section split">
+        <div>
+          <div class="section-head">
+            <h2>Slots</h2>
+          </div>
+          <div class="slot-grid" id="slot-grid"></div>
+        </div>
+        <div>
+          <div class="section-head">
+            <h2>Events</h2>
+          </div>
+          <div class="event-list" id="event-list"></div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Charts</h2>
+          <div class="segmented" role="group" aria-label="History window">
+            <button type="button" data-window="5m" class="active">5m</button>
+            <button type="button" data-window="30m">30m</button>
+            <button type="button" data-window="2h">2h</button>
+            <button type="button" data-window="session">Session</button>
+          </div>
+        </div>
+        <div class="chart-grid" id="chart-grid"></div>
+      </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
