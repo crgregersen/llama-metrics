@@ -14,7 +14,7 @@ It combines:
 - Native `llama-server` Prometheus metrics from `/metrics`
 - Per-slot request and generation state from `/slots`
 - Host and process telemetry
-- Optional authenticated access to protected llama-server endpoints
+- Authenticated access to protected llama-server endpoints when configured
 
 The application is a **read-only observer**.
 
@@ -56,11 +56,11 @@ It must never start, stop, restart or reconfigure `llama-server`.
 - Python 3.11 or newer
 - Existing `llama.cpp` `llama-server`
 - `llama-server` `/metrics` endpoint enabled through `--metrics`
+- Protected `llama-server` endpoints using Bearer-token authentication
+- Multiple GPUs
 
 ### Optional
 
-- Protected `llama-server` endpoints using Bearer-token authentication
-- Multiple GPUs
 - Multiple `llama-server` instances in a later release
 - SQLite for persistent history in a later release
 
@@ -125,19 +125,34 @@ Example `.env` file:
 ```bash
 LLAMA_BASE_URL=http://127.0.0.1:8080
 LLAMA_API_KEY=
+LLAMA_METRICS_MODEL=
+LLAMA_METRICS_DEMO=0
 OBSERVER_HOST=0.0.0.0
 OBSERVER_PORT=7778
 POLL_INTERVAL_SECONDS=1
 HISTORY_RETENTION_MINUTES=30
+GPU_TEMPERATURE_ALERT_C=85
+GPU_VRAM_ALERT_PERCENT=90
+GENERATION_THROUGHPUT_DROP_PERCENT=40
+GENERATION_THROUGHPUT_DROP_WINDOW_SECONDS=30
 ```
 
 Rules:
 
 - `LLAMA_API_KEY` is optional.
 - When configured, it must be sent as `Authorization: Bearer <key>`.
+- Bearer-token support for protected `llama-server` endpoints is required for
+  MVP.
+- `LLAMA_METRICS_MODEL` is optional. When configured, it is sent as the
+  `model` query parameter for `/metrics` polling.
+- `LLAMA_METRICS_DEMO=1` enables generated mock telemetry for development and
+  UI verification without a reachable `llama-server` or NVML.
 - The key must never be returned by any API endpoint.
 - The key must never appear in HTML, JavaScript bundles or browser developer tools.
 - The dashboard should work with unauthenticated `llama-server` instances too.
+- The default `OBSERVER_HOST` is `0.0.0.0`; deployments must treat the
+  unauthenticated dashboard as network-accessible unless bound or firewalled
+  differently.
 
 ---
 
@@ -524,9 +539,15 @@ The browser must reconnect automatically after a temporary connection failure.
 4. The observer must not provide a chat endpoint.
 5. The observer must not provide model-management endpoints.
 6. The observer must not run shell commands based on browser input.
-7. The observer should bind only to localhost by default.
-8. LAN exposure should require an explicit host configuration.
+7. The observer binds to `0.0.0.0` by default for LAN visibility.
+8. Deployments that require localhost-only access should set
+   `OBSERVER_HOST=127.0.0.1` explicitly.
 9. Optional dashboard authentication should be designed as a future extension.
+
+Browser-facing APIs must be sanitized. They must not include raw slot payloads,
+prompt text, arbitrary upstream responses, request bodies, or secret-bearing
+configuration. Unknown Prometheus metrics may be exposed only as sanitized metric
+names, labels and numeric values.
 
 ---
 
@@ -593,7 +614,8 @@ The MVP is complete when all of the following are true:
 5. GPU history charts retain at least 30 minutes of samples.
 6. The dashboard reads `llama-server` `/metrics`.
 7. The dashboard reads `llama-server` `/slots`.
-8. The dashboard supports optional Bearer-token authentication.
+8. The dashboard supports authenticated `llama-server` endpoints through
+   optional `LLAMA_API_KEY` configuration.
 9. The browser never receives the `llama-server` API key.
 10. The dashboard shows prompt and generation throughput.
 11. The dashboard shows active and queued request counts.
@@ -601,6 +623,10 @@ The MVP is complete when all of the following are true:
 13. The dashboard remains available when `llama-server` is offline.
 14. The dashboard does not crash when `/slots` payload structure changes.
 15. The dashboard can be installed and run without Docker, Prometheus or Grafana.
+16. The dashboard data model and UI support multiple GPUs as a required MVP
+    capability.
+17. `LLAMA_METRICS_DEMO=1` provides a runnable development/demo mode without
+    real GPU hardware or a reachable `llama-server`.
 
 ---
 

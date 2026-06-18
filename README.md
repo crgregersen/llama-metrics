@@ -24,4 +24,23 @@ benchmark runner, or remote command execution tool.
 
 ## Status
 
-Initial project setup. Implementation has not started yet.
+Specification and phased implementation planning are in progress. See
+[IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for the build phases and
+acceptance gates.
+
+## Planned Runtime
+
+The MVP will run from a Python virtual environment with pinned dependencies,
+FastAPI, static browser assets, and no required Docker, database, Prometheus,
+Grafana, or Node build step.
+
+Default runtime settings will be environment-based:
+
+```bash
+LLAMA_BASE_URL=http://127.0.0.1:8080
+LLAMA_API_KEY=
+LLAMA_METRICS_MODEL=
+LLAMA_METRICS_DEMO=0
+OBSERVER_HOST=0.0.0.0
+OBSERVER_PORT=7778
+```
