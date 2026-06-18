@@ -1,11 +1,10 @@
 # LlamaMetrics
 
-LlamaMetrics is a planned lightweight web dashboard for monitoring an existing
+LlamaMetrics is a lightweight web dashboard for monitoring an existing
 `llama.cpp` / `llama-server` inference service.
 
-The project is currently at the specification stage. See
-[llama-metrics-specification.md](./llama-metrics-specification.md) for the full
-project requirements.
+See [llama-metrics-specification.md](./llama-metrics-specification.md) for the
+full project requirements.
 
 ## Goals
 
@@ -28,15 +27,25 @@ MVP implementation is available with a FastAPI backend, sanitized API, demo
 telemetry, multi-GPU dashboard, in-memory history, and event stream.
 See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for the phase gates.
 
-## Install
+## Install From GitHub
 
-Use Python 3.11 or newer:
+Run these commands on the machine that should host the LlamaMetrics dashboard.
+This can be the same machine as `llama-server`, or another machine that can
+reach it over the network.
 
 ```bash
+mkdir -p ~/src
+cd ~/src
+git clone git@github.com:crgregersen/llama-metrics.git
+cd llama-metrics
+
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
+
 mkdir -p ~/.llama-metrics
 cp .env.example ~/.llama-metrics/.env
+chmod 700 ~/.llama-metrics
+chmod 600 ~/.llama-metrics/.env
 ```
 
 Edit `~/.llama-metrics/.env` for your `llama-server`:
@@ -50,9 +59,32 @@ OBSERVER_HOST=0.0.0.0
 OBSERVER_PORT=7778
 ```
 
+Set `LLAMA_BASE_URL` to the existing `llama-server` address and port. For
+example, if `llama-server` was started with `--port 20202` on the same machine,
+use:
+
+```bash
+LLAMA_BASE_URL=http://127.0.0.1:20202
+```
+
 `LLAMA_API_KEY` is sent only from the backend to `llama-server` as
 `Authorization: Bearer <key>` when configured. It is never returned by the API or
 embedded in browser assets.
+
+If your `llama-server` is protected, set `LLAMA_API_KEY` to the same Bearer token
+that `llama-server` expects. For example, if your inference startup script does
+this:
+
+```bash
+export LLAMA_API_KEY="$QWEN_API_KEY"
+```
+
+then either put the same token value in `~/.llama-metrics/.env`, or leave
+`LLAMA_API_KEY=` empty in the file and start LlamaMetrics with:
+
+```bash
+LLAMA_API_KEY="$QWEN_API_KEY" .venv/bin/python -m app.run
+```
 
 Configuration is loaded from `~/.llama-metrics/.env` by default. A local `.env`
 inside the checkout is also supported for development and overrides values from
@@ -86,13 +118,14 @@ Use `LLAMA_METRICS_DEMO=0` for real monitoring.
 Start against a real `llama-server`:
 
 ```bash
+cd ~/src/llama-metrics
 .venv/bin/python -m app.run
 ```
 
 Open:
 
 ```text
-http://localhost:7778
+http://DASHBOARD_SERVER_IP:7778
 ```
 
 Run without `llama-server` or GPU hardware:
