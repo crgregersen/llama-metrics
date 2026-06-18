@@ -36,7 +36,7 @@ reach it over the network.
 ```bash
 mkdir -p ~/src
 cd ~/src
-git clone git@github.com:crgregersen/llama-metrics.git
+git clone https://github.com/crgregersen/llama-metrics.git
 cd llama-metrics
 
 python3 -m venv .venv
