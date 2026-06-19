@@ -43,6 +43,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return FileResponse(index_path)
         return {"name": "LlamaMetrics", "status": "dashboard not built yet"}
 
+    @app.get("/favicon.ico", include_in_schema=False)
+    async def favicon():
+        icon_path = STATIC_DIR / "favicon.svg"
+        if icon_path.exists():
+            return FileResponse(icon_path, media_type="image/svg+xml")
+        return {"detail": "favicon not found"}
+
     return app
 
 

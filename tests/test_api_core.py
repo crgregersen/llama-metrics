@@ -76,7 +76,16 @@ def test_root_serves_dashboard() -> None:
 
     assert response.status_code == 200
     assert "LlamaMetrics" in response.text
+    assert "/static/favicon.svg" in response.text
     assert "/static/app.js" in response.text
+
+
+def test_favicon_is_served() -> None:
+    client = make_client()
+    response = client.get("/favicon.ico")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("image/svg+xml")
 
 
 def test_no_forbidden_public_endpoints() -> None:
