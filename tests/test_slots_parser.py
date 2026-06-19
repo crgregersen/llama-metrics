@@ -10,6 +10,9 @@ def test_parse_next_token_array() -> None:
             "id_task": 1234,
             "is_processing": True,
             "n_ctx": 131072,
+            "n_prompt_tokens": 62222,
+            "n_prompt_tokens_processed": 20,
+            "n_prompt_tokens_cache": 62084,
             "next_token": [
                 {
                     "has_next_token": True,
@@ -26,6 +29,12 @@ def test_parse_next_token_array() -> None:
     slot = slots[0]
     assert slot.slot_id == 0
     assert slot.task_id == 1234
+    assert slot.prompt_tokens == 62222
+    assert slot.prompt_tokens_processed == 20
+    assert slot.prompt_tokens_cached == 62084
+    assert slot.context_used_tokens == 66222
+    assert slot.context_remaining_tokens == 64850
+    assert slot.context_usage_progress == 66222 / 131072
     assert slot.generated_tokens == 4000
     assert slot.remaining_tokens == 12000
     assert slot.output_token_limit == 16000
@@ -47,6 +56,40 @@ def test_parse_next_token_object() -> None:
     assert slot.remaining_tokens == 0
     assert slot.output_token_limit == 99
     assert slot.state == "processing"
+
+
+def test_parse_live_llama_server_context_fields_without_prompt_params() -> None:
+    payload = {
+        "id": 0,
+        "n_ctx": 131072,
+        "is_processing": True,
+        "id_task": 14836,
+        "n_prompt_tokens": 62222,
+        "n_prompt_tokens_processed": 20,
+        "n_prompt_tokens_cache": 62084,
+        "params": {
+            "max_tokens": 32000,
+            "n_predict": 32000,
+            "generation_prompt": "<redacted>",
+        },
+        "next_token": [
+            {
+                "has_next_token": True,
+                "n_remain": 31881,
+                "n_decoded": 119,
+            }
+        ],
+    }
+
+    slot = parse_slots_payload(payload)[0]
+
+    assert slot.prompt_tokens == 62222
+    assert slot.prompt_tokens_processed == 20
+    assert slot.prompt_tokens_cached == 62084
+    assert slot.context_used_tokens == 62341
+    assert slot.context_remaining_tokens == 68731
+    assert slot.context_usage_progress == 62341 / 131072
+    assert slot.output_token_limit == 32000
 
 
 def test_parse_null_or_absent_next_token_as_idle_safe() -> None:

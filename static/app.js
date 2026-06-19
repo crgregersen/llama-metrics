@@ -221,6 +221,10 @@ function renderSlots(snapshot) {
       <div class="kv-grid">
         ${kv("Task", slot.task_id ?? "--")}
         ${kv("Context", formatInteger(slot.n_ctx))}
+        ${kv("Context used", formatInteger(slot.context_used_tokens))}
+        ${kv("Context left", formatInteger(slot.context_remaining_tokens))}
+        ${kv("Prompt", formatInteger(slot.prompt_tokens))}
+        ${kv("Cached", formatInteger(slot.prompt_tokens_cached))}
         ${kv("Generated", formatInteger(slot.generated_tokens))}
         ${kv("Remaining", formatInteger(slot.remaining_tokens))}
         ${kv("Output limit", formatInteger(slot.output_token_limit))}

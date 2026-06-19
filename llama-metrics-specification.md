@@ -263,6 +263,11 @@ Slot ID
 Task ID
 Processing state
 Configured context size
+Prompt tokens where reported
+Prompt tokens processed where reported
+Prompt tokens served from cache where reported
+Estimated current context used
+Estimated remaining context capacity
 Generated output tokens
 Remaining output tokens
 Output-token limit
@@ -293,9 +298,13 @@ Derived values:
 Output-token limit = generated tokens + remaining tokens
 Output progress = generated tokens / output-token limit
 Estimated remaining generation time = remaining tokens / current generation throughput
+Estimated current context used = prompt tokens + generated tokens where both are reported
+Estimated remaining context capacity = configured context size - estimated current context used
 ```
 
 When no request is active, the UI should render the slot as idle.
+Idle slots should suppress stale task, output-token and context-usage fields that
+may remain in `/slots` from the previous request.
 
 ---
 
@@ -418,6 +427,10 @@ Slot ID
 Task ID
 State
 Configured context size
+Current context used where available
+Remaining context capacity where available
+Prompt tokens where available
+Prompt tokens cached where available
 Generated output tokens
 Remaining output allowance
 Output-token limit

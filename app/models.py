@@ -45,6 +45,12 @@ class SlotState(BaseModel):
     task_id: int | str | None = None
     is_processing: bool = False
     n_ctx: int | None = None
+    prompt_tokens: int | None = None
+    prompt_tokens_processed: int | None = None
+    prompt_tokens_cached: int | None = None
+    context_used_tokens: int | None = None
+    context_remaining_tokens: int | None = None
+    context_usage_progress: float | None = None
     generated_tokens: int | None = None
     remaining_tokens: int | None = None
     output_token_limit: int | None = None

@@ -64,12 +64,19 @@ def _parse_slot(
         generation_tokens_per_second,
     )
     is_processing = bool(raw_slot.get("is_processing", False))
+    n_ctx = _coerce_int(raw_slot.get("n_ctx"))
+    prompt_tokens = _coerce_int(raw_slot.get("n_prompt_tokens"))
+    prompt_tokens_processed = _coerce_int(raw_slot.get("n_prompt_tokens_processed"))
+    prompt_tokens_cached = _coerce_int(raw_slot.get("n_prompt_tokens_cache"))
+    context_used = _context_used(prompt_tokens, generated)
+    context_remaining = _context_remaining(n_ctx, context_used)
+    context_progress = _progress(context_used, n_ctx)
 
     if not is_processing:
         return SlotState(
             slot_id=raw_slot.get("id", raw_slot.get("id_slot", raw_slot.get("slot_id"))),
             is_processing=False,
-            n_ctx=_coerce_int(raw_slot.get("n_ctx")),
+            n_ctx=n_ctx,
             state="idle",
         )
 
@@ -77,7 +84,13 @@ def _parse_slot(
         slot_id=raw_slot.get("id", raw_slot.get("id_slot", raw_slot.get("slot_id"))),
         task_id=raw_slot.get("id_task", raw_slot.get("task_id")),
         is_processing=is_processing,
-        n_ctx=_coerce_int(raw_slot.get("n_ctx")),
+        n_ctx=n_ctx,
+        prompt_tokens=prompt_tokens,
+        prompt_tokens_processed=prompt_tokens_processed,
+        prompt_tokens_cached=prompt_tokens_cached,
+        context_used_tokens=context_used,
+        context_remaining_tokens=context_remaining,
+        context_usage_progress=context_progress,
         generated_tokens=generated,
         remaining_tokens=remaining,
         output_token_limit=output_limit,
@@ -136,6 +149,24 @@ def _progress(generated: int | None, output_limit: int | None) -> float | None:
     if generated is None or output_limit is None or output_limit <= 0:
         return None
     return min(1.0, max(0.0, generated / output_limit))
+
+
+def _context_used(prompt_tokens: int | None, generated: int | None) -> int | None:
+    if prompt_tokens is None:
+        return None
+    if prompt_tokens < 0:
+        return None
+    if generated is None or generated < 0:
+        return prompt_tokens
+    return prompt_tokens + generated
+
+
+def _context_remaining(n_ctx: int | None, context_used: int | None) -> int | None:
+    if n_ctx is None or context_used is None:
+        return None
+    if n_ctx < 0 or context_used < 0:
+        return None
+    return max(0, n_ctx - context_used)
 
 
 def _estimated_remaining(
