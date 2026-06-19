@@ -442,17 +442,24 @@ The dashboard should be graph-heavy rather than only presenting current-value ca
 Current session
 ```
 
+### Required chart layout
+
+GPU charts must be grouped by GPU rather than combining all GPUs into the same
+chart. For example, a host with two GPUs should render one chart area for
+`GPU 0`, one chart area for `GPU 1`, and a separate system/inference chart area.
+Hosts with more GPUs should add one additional GPU chart area per GPU.
+
 ### Required charts
 
 | Chart | Series |
 |---|---|
-| GPU utilisation | One line per GPU |
-| VRAM use | One line per GPU |
-| Power draw | One line per GPU |
-| Temperature | One line per GPU |
-| Graphics clock | One line per GPU |
-| Memory clock | One line per GPU |
-| PCIe traffic | RX and TX per GPU |
+| Per-GPU utilisation | One chart per GPU |
+| Per-GPU VRAM use | One chart per GPU |
+| Per-GPU power draw | One chart per GPU |
+| Per-GPU temperature | One chart per GPU |
+| Per-GPU graphics clock | One chart per GPU |
+| Per-GPU memory clock | One chart per GPU |
+| Per-GPU PCIe traffic | RX and TX series within each GPU chart area |
 | Inference throughput | Prompt tok/s and generation tok/s |
 | Request state | Active and queued requests |
 | Host CPU | System CPU and llama-server CPU |

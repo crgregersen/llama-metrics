@@ -18,14 +18,17 @@ const palette = [
   "#0891b2",
 ];
 
-const charts = [
-  { id: "gpu-util", title: "GPU utilisation", unit: "%", series: gpuSeries("utilization_percent") },
-  { id: "vram", title: "VRAM use", unit: "GB", series: gpuSeries("vram_used_bytes", bytesToGb) },
-  { id: "power", title: "Power draw", unit: "W", series: gpuSeries("power_draw_w") },
-  { id: "temperature", title: "Temperature", unit: "C", series: gpuSeries("temperature_c") },
-  { id: "gfx-clock", title: "Graphics clock", unit: "MHz", series: gpuSeries("graphics_clock_mhz") },
-  { id: "mem-clock", title: "Memory clock", unit: "MHz", series: gpuSeries("memory_clock_mhz") },
-  { id: "pcie", title: "PCIe traffic", unit: "MB/s", series: pcieSeries },
+const gpuCharts = [
+  { id: "util", title: "Utilisation", unit: "%", series: (index) => gpuMetricSeries(index, "utilization_percent", identity, "Util") },
+  { id: "vram", title: "VRAM use", unit: "GB", series: (index) => gpuMetricSeries(index, "vram_used_bytes", bytesToGb, "VRAM") },
+  { id: "power", title: "Power draw", unit: "W", series: (index) => gpuMetricSeries(index, "power_draw_w", identity, "Power") },
+  { id: "temperature", title: "Temperature", unit: "C", series: (index) => gpuMetricSeries(index, "temperature_c", identity, "Temp") },
+  { id: "gfx-clock", title: "Graphics clock", unit: "MHz", series: (index) => gpuMetricSeries(index, "graphics_clock_mhz", identity, "Graphics") },
+  { id: "mem-clock", title: "Memory clock", unit: "MHz", series: (index) => gpuMetricSeries(index, "memory_clock_mhz", identity, "Memory") },
+  { id: "pcie", title: "PCIe traffic", unit: "MB/s", series: (index) => gpuPcieSeries(index) },
+];
+
+const systemCharts = [
   { id: "throughput", title: "Inference throughput", unit: "tok/s", series: throughputSeries },
   { id: "requests", title: "Request state", unit: "requests", series: requestSeries },
   { id: "host-cpu", title: "Host CPU", unit: "%", series: hostCpuSeries },
@@ -33,23 +36,12 @@ const charts = [
 ];
 
 document.addEventListener("DOMContentLoaded", () => {
-  buildCharts();
   bindWindowControls();
   loadHistory();
   loadEvents();
   connectStream();
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", render);
 });
-
-function buildCharts() {
-  const grid = document.getElementById("chart-grid");
-  grid.innerHTML = charts.map((chart) => `
-    <article class="chart-card">
-      <div class="chart-title"><strong>${chart.title}</strong><span>${chart.unit}</span></div>
-      <canvas id="chart-${chart.id}" width="640" height="260"></canvas>
-    </article>
-  `).join("");
-}
 
 function bindWindowControls() {
   document.querySelectorAll("[data-window]").forEach((button) => {
@@ -256,11 +248,82 @@ function renderEvents() {
 }
 
 function renderCharts() {
-  for (const chart of charts) {
-    const canvas = document.getElementById(`chart-${chart.id}`);
+  buildChartGroups();
+
+  const gpuIndexes = currentGpuIndexes();
+  for (const index of gpuIndexes) {
+    for (const chart of gpuCharts) {
+      const canvas = document.getElementById(`chart-gpu-${index}-${chart.id}`);
+      if (!canvas) continue;
+      drawChart(canvas, chart.series(index)(state.snapshots), chart.unit);
+    }
+  }
+
+  for (const chart of systemCharts) {
+    const canvas = document.getElementById(`chart-system-${chart.id}`);
     if (!canvas) continue;
     drawChart(canvas, chart.series(state.snapshots), chart.unit);
   }
+}
+
+function buildChartGroups() {
+  const container = document.getElementById("chart-groups");
+  if (!container) return;
+
+  const signature = chartLayoutSignature();
+  if (container.dataset.signature === signature) return;
+  container.dataset.signature = signature;
+
+  const gpuIndexes = currentGpuIndexes();
+  const gpuGroups = gpuIndexes.map((index) => {
+    const gpu = latestGpu(index);
+    const title = `GPU ${index}${gpu?.name ? ` - ${gpu.name}` : ""}`;
+    return `
+      <section class="chart-group" aria-label="${escapeHtml(title)} charts">
+        <div class="chart-group-head">
+          <h3>${escapeHtml(title)}</h3>
+          <span>${escapeHtml(gpu?.uuid || "")}</span>
+        </div>
+        <div class="chart-grid">
+          ${gpuCharts.map((chart) => chartCard(`gpu-${index}-${chart.id}`, chart)).join("")}
+        </div>
+      </section>
+    `;
+  }).join("");
+
+  const noGpuGroup = gpuIndexes.length === 0
+    ? `<div class="empty">GPU chart data unavailable</div>`
+    : "";
+
+  container.innerHTML = `
+    ${gpuGroups || noGpuGroup}
+    <section class="chart-group" aria-label="System charts">
+      <div class="chart-group-head">
+        <h3>System / Inference</h3>
+        <span>Host, process, request and throughput telemetry</span>
+      </div>
+      <div class="chart-grid">
+        ${systemCharts.map((chart) => chartCard(`system-${chart.id}`, chart)).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function chartCard(id, chart) {
+  return `
+    <article class="chart-card">
+      <div class="chart-title"><strong>${chart.title}</strong><span>${chart.unit}</span></div>
+      <canvas id="chart-${id}" width="640" height="260"></canvas>
+    </article>
+  `;
+}
+
+function chartLayoutSignature() {
+  const gpuParts = currentGpuIndexes().map((index) => {
+    const gpu = latestGpu(index);
+    return `${index}:${gpu?.name || ""}:${gpu?.uuid || ""}`;
+  });
+  return `${gpuParts.join("|")}::system`;
 }
 
 function drawChart(canvas, series, unit) {
@@ -344,41 +407,35 @@ function drawLegend(ctx, series, width, height, ratio) {
   });
 }
 
-function gpuSeries(field, transform = identity) {
-  return (snapshots) => {
-    const indexes = new Set();
-    snapshots.forEach((snapshot) => (snapshot.gpus || []).forEach((gpu) => indexes.add(gpu.index)));
-    return [...indexes].sort((a, b) => a - b).map((index) => ({
-      name: `GPU ${index}`,
+function gpuMetricSeries(index, field, transform = identity, name = "Value") {
+  return (snapshots) => [
+    {
+      name,
       points: snapshots.map((snapshot) => {
-        const gpu = (snapshot.gpus || []).find((item) => item.index === index) || {};
-        return { x: Date.parse(snapshot.timestamp), y: transform(gpu[field]) };
+        const gpu = gpuFromSnapshot(snapshot, index);
+        return { x: Date.parse(snapshot.timestamp), y: transform(gpu?.[field]) };
       }),
-    }));
-  };
+    },
+  ];
 }
 
-function pcieSeries(snapshots) {
-  const indexes = new Set();
-  snapshots.forEach((snapshot) => (snapshot.gpus || []).forEach((gpu) => indexes.add(gpu.index)));
-  const series = [];
-  [...indexes].sort((a, b) => a - b).forEach((index) => {
-    series.push({
-      name: `GPU ${index} RX`,
+function gpuPcieSeries(index) {
+  return (snapshots) => [
+    {
+      name: "RX",
       points: snapshots.map((snapshot) => {
-        const gpu = (snapshot.gpus || []).find((item) => item.index === index) || {};
-        return { x: Date.parse(snapshot.timestamp), y: bytesToMb(gpu.pcie_rx_bytes_per_second) };
+        const gpu = gpuFromSnapshot(snapshot, index);
+        return { x: Date.parse(snapshot.timestamp), y: bytesToMb(gpu?.pcie_rx_bytes_per_second) };
       }),
-    });
-    series.push({
-      name: `GPU ${index} TX`,
+    },
+    {
+      name: "TX",
       points: snapshots.map((snapshot) => {
-        const gpu = (snapshot.gpus || []).find((item) => item.index === index) || {};
-        return { x: Date.parse(snapshot.timestamp), y: bytesToMb(gpu.pcie_tx_bytes_per_second) };
+        const gpu = gpuFromSnapshot(snapshot, index);
+        return { x: Date.parse(snapshot.timestamp), y: bytesToMb(gpu?.pcie_tx_bytes_per_second) };
       }),
-    });
-  });
-  return series;
+    },
+  ];
 }
 
 function throughputSeries(snapshots) {
@@ -414,6 +471,20 @@ function lineFrom(snapshots, name, getter) {
     name,
     points: snapshots.map((snapshot) => ({ x: Date.parse(snapshot.timestamp), y: getter(snapshot) })),
   };
+}
+
+function currentGpuIndexes() {
+  const snapshot = state.snapshots[state.snapshots.length - 1];
+  return (snapshot?.gpus || []).map((gpu) => gpu.index).sort((a, b) => a - b);
+}
+
+function latestGpu(index) {
+  const snapshot = state.snapshots[state.snapshots.length - 1];
+  return gpuFromSnapshot(snapshot, index);
+}
+
+function gpuFromSnapshot(snapshot, index) {
+  return (snapshot?.gpus || []).find((gpu) => gpu.index === index);
 }
 
 function kv(label, value) {

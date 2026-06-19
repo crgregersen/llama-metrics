@@ -306,6 +306,40 @@ main {
   font-weight: 700;
 }
 
+.chart-groups {
+  display: grid;
+  gap: 18px;
+}
+
+.chart-group {
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+
+.chart-group:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.chart-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.chart-group-head h3 {
+  font-size: 15px;
+}
+
+.chart-group-head span {
+  color: var(--muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
 .chart-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
