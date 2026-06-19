@@ -145,6 +145,32 @@ Run without `llama-server` or GPU hardware:
 LLAMA_METRICS_DEMO=1 .venv/bin/python -m app.run --host 127.0.0.1
 ```
 
+## Upgrade
+
+For a checkout installed from GitHub:
+
+```bash
+cd ~/src/llama-metrics
+git pull
+.venv/bin/pip install -r requirements.txt
+```
+
+If LlamaMetrics is running in the foreground, stop it with `Ctrl+C` and start it
+again:
+
+```bash
+.venv/bin/python -m app.run
+```
+
+If it is running as a systemd service:
+
+```bash
+sudo systemctl restart llama-metrics
+sudo systemctl status llama-metrics
+```
+
+Configuration in `~/.llama-metrics/.env` is not replaced by `git pull`.
+
 ## Troubleshooting
 
 If installation fails while building `pydantic-core` and the log mentions
