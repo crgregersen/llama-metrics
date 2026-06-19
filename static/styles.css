@@ -86,7 +86,7 @@ h2 {
 
 .status-strip {
   display: grid;
-  grid-template-columns: auto repeat(5, minmax(72px, auto));
+  grid-template-columns: 104px 92px 72px 112px 64px 64px;
   gap: 8px;
   align-items: stretch;
 }
@@ -131,8 +131,13 @@ h2 {
 }
 
 .stat {
-  min-width: 72px;
   padding: 8px 10px;
+  min-width: 0;
+}
+
+.stat-time,
+.stat-uptime {
+  font-variant-numeric: tabular-nums;
 }
 
 .stat span,
@@ -148,6 +153,11 @@ h2 {
   display: block;
   margin-top: 2px;
   font-size: 15px;
+}
+
+.stat strong {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 main {

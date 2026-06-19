@@ -153,9 +153,9 @@ function render() {
 
 function renderHeader(snapshot) {
   setText("server-url", snapshot.server?.base_url || "--");
-  setText("last-poll", formatTime(snapshot.timestamp));
+  setText("last-poll", formatClockTime(snapshot.timestamp));
   setText("server-pid", snapshot.server?.pid ?? "--");
-  setText("server-uptime", formatDuration(snapshot.server?.uptime_seconds));
+  setText("server-uptime", formatClockDuration(snapshot.server?.uptime_seconds));
   setText("gpu-count", snapshot.gpus?.length ?? 0);
   setText("slot-count", snapshot.slots?.length ?? 0);
   const status = snapshot.status || "unknown";
@@ -506,6 +506,28 @@ function formatTime(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "--";
   return date.toLocaleTimeString();
+}
+
+function formatClockTime(value) {
+  if (!value) return "--:--:--";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "--:--:--";
+  return [date.getHours(), date.getMinutes(), date.getSeconds()]
+    .map((part) => String(part).padStart(2, "0"))
+    .join(":");
+}
+
+function formatClockDuration(seconds) {
+  if (seconds == null || !Number.isFinite(Number(seconds))) return "--:--:--";
+  seconds = Math.max(0, Math.floor(Number(seconds)));
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  const clock = [hours, minutes, secs]
+    .map((part) => String(part).padStart(2, "0"))
+    .join(":");
+  return days > 0 ? `${days}d ${clock}` : clock;
 }
 
 function formatDuration(seconds) {
