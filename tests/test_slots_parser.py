@@ -61,6 +61,29 @@ def test_parse_null_or_absent_next_token_as_idle_safe() -> None:
     assert all(slot.generated_tokens is None for slot in slots)
 
 
+def test_idle_slot_drops_stale_task_and_token_fields() -> None:
+    payload = {
+        "id": 0,
+        "id_task": 9428,
+        "is_processing": False,
+        "n_ctx": 131072,
+        "next_token": {"has_next_token": False, "n_remain": 31800, "n_decoded": 200},
+    }
+
+    slot = parse_slots_payload(payload, generation_tokens_per_second=28.4)[0]
+
+    assert slot.state == "idle"
+    assert slot.slot_id == 0
+    assert slot.task_id is None
+    assert slot.n_ctx == 131072
+    assert slot.generated_tokens is None
+    assert slot.remaining_tokens is None
+    assert slot.output_token_limit is None
+    assert slot.output_progress is None
+    assert slot.has_next_token is None
+    assert slot.estimated_seconds_remaining is None
+
+
 def test_malformed_payload_returns_parse_error() -> None:
     slots = parse_slots_payload("not-json-object")
 

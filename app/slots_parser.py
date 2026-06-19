@@ -65,6 +65,14 @@ def _parse_slot(
     )
     is_processing = bool(raw_slot.get("is_processing", False))
 
+    if not is_processing:
+        return SlotState(
+            slot_id=raw_slot.get("id", raw_slot.get("id_slot", raw_slot.get("slot_id"))),
+            is_processing=False,
+            n_ctx=_coerce_int(raw_slot.get("n_ctx")),
+            state="idle",
+        )
+
     return SlotState(
         slot_id=raw_slot.get("id", raw_slot.get("id_slot", raw_slot.get("slot_id"))),
         task_id=raw_slot.get("id_task", raw_slot.get("task_id")),

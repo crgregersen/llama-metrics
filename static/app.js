@@ -223,7 +223,7 @@ function renderSlots(snapshot) {
         ${kv("Context", formatInteger(slot.n_ctx))}
         ${kv("Generated", formatInteger(slot.generated_tokens))}
         ${kv("Remaining", formatInteger(slot.remaining_tokens))}
-        ${kv("Limit", formatInteger(slot.output_token_limit))}
+        ${kv("Output limit", formatInteger(slot.output_token_limit))}
         ${kv("Progress", percent(slot.output_progress == null ? null : slot.output_progress * 100))}
         ${kv("Continuing", slot.has_next_token == null ? "--" : slot.has_next_token ? "yes" : "no")}
         ${kv("ETA", formatDuration(slot.estimated_seconds_remaining))}
