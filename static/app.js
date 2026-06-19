@@ -215,7 +215,7 @@ function renderSlots(snapshot) {
     <article class="slot-card">
       <div class="card-title">
         <h3>Slot ${escapeHtml(slot.slot_id ?? "--")}</h3>
-        <span class="badge">${escapeHtml(slot.state || "unknown")}</span>
+        <span class="badge">${escapeHtml(slotBadge(slot))}</span>
       </div>
       ${bar((slot.output_progress ?? 0) * 100)}
       <div class="kv-grid">
@@ -234,6 +234,13 @@ function renderSlots(snapshot) {
       </div>
     </article>
   `).join("");
+}
+
+function slotBadge(slot) {
+  const stateText = slot.state || "unknown";
+  return slot.metrics_are_current === false && stateText === "idle"
+    ? "idle - last request"
+    : stateText;
 }
 
 function renderEvents() {

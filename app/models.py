@@ -58,6 +58,7 @@ class SlotState(BaseModel):
     has_next_token: bool | None = None
     estimated_seconds_remaining: float | None = None
     state: str = "idle"
+    metrics_are_current: bool = False
     parse_error: str | None = None
 
 

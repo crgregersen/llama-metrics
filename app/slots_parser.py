@@ -75,9 +75,23 @@ def _parse_slot(
     if not is_processing:
         return SlotState(
             slot_id=raw_slot.get("id", raw_slot.get("id_slot", raw_slot.get("slot_id"))),
+            task_id=raw_slot.get("id_task", raw_slot.get("task_id")),
             is_processing=False,
             n_ctx=n_ctx,
+            prompt_tokens=prompt_tokens,
+            prompt_tokens_processed=prompt_tokens_processed,
+            prompt_tokens_cached=prompt_tokens_cached,
+            context_used_tokens=context_used,
+            context_remaining_tokens=context_remaining,
+            context_usage_progress=context_progress,
+            generated_tokens=generated,
+            remaining_tokens=remaining,
+            output_token_limit=output_limit,
+            output_progress=progress,
+            has_next_token=has_next_token,
+            estimated_seconds_remaining=None,
             state="idle",
+            metrics_are_current=False,
         )
 
     return SlotState(
@@ -98,6 +112,7 @@ def _parse_slot(
         has_next_token=has_next_token,
         estimated_seconds_remaining=estimated_remaining,
         state=_slot_state(is_processing, has_next_token),
+        metrics_are_current=True,
     )
 
 

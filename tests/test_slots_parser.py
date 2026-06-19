@@ -90,6 +90,7 @@ def test_parse_live_llama_server_context_fields_without_prompt_params() -> None:
     assert slot.context_remaining_tokens == 68731
     assert slot.context_usage_progress == 62341 / 131072
     assert slot.output_token_limit == 32000
+    assert slot.metrics_are_current is True
 
 
 def test_parse_null_or_absent_next_token_as_idle_safe() -> None:
@@ -104,12 +105,14 @@ def test_parse_null_or_absent_next_token_as_idle_safe() -> None:
     assert all(slot.generated_tokens is None for slot in slots)
 
 
-def test_idle_slot_drops_stale_task_and_token_fields() -> None:
+def test_idle_slot_keeps_last_metrics_but_marks_them_stale() -> None:
     payload = {
         "id": 0,
         "id_task": 9428,
         "is_processing": False,
         "n_ctx": 131072,
+        "n_prompt_tokens": 62222,
+        "n_prompt_tokens_cache": 62084,
         "next_token": {"has_next_token": False, "n_remain": 31800, "n_decoded": 200},
     }
 
@@ -117,14 +120,19 @@ def test_idle_slot_drops_stale_task_and_token_fields() -> None:
 
     assert slot.state == "idle"
     assert slot.slot_id == 0
-    assert slot.task_id is None
+    assert slot.task_id == 9428
     assert slot.n_ctx == 131072
-    assert slot.generated_tokens is None
-    assert slot.remaining_tokens is None
-    assert slot.output_token_limit is None
-    assert slot.output_progress is None
-    assert slot.has_next_token is None
+    assert slot.prompt_tokens == 62222
+    assert slot.prompt_tokens_cached == 62084
+    assert slot.context_used_tokens == 62422
+    assert slot.context_remaining_tokens == 68650
+    assert slot.generated_tokens == 200
+    assert slot.remaining_tokens == 31800
+    assert slot.output_token_limit == 32000
+    assert slot.output_progress == 0.00625
+    assert slot.has_next_token is False
     assert slot.estimated_seconds_remaining is None
+    assert slot.metrics_are_current is False
 
 
 def test_malformed_payload_returns_parse_error() -> None:

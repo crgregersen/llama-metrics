@@ -302,9 +302,10 @@ Estimated current context used = prompt tokens + generated tokens where both are
 Estimated remaining context capacity = configured context size - estimated current context used
 ```
 
-When no request is active, the UI should render the slot as idle.
-Idle slots should suppress stale task, output-token and context-usage fields that
-may remain in `/slots` from the previous request.
+When no request is active, the UI should render the slot as idle. If
+`llama-server` continues to report task, output-token or context-usage fields for
+an idle slot, the UI should show them as last-request values rather than current
+activity.
 
 ---
 
